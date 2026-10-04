@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+instance/
+certs/
+*.db
+*.log
+coverage.xml
+trivy.sarif
+.env.docker
+*.key

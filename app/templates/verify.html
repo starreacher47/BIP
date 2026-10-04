@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<section class="card narrow"><h1>Подтверждение</h1><form method="post"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><label>Код<input name="code" required></label><button>Подтвердить</button></form></section>{% endblock %}

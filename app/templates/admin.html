@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Панель администратора</h1>
+
+<div class="stats">
+    {% for k, v in stats.items() %}
+    <div class="stat">
+        <strong>{{ v }}</strong>
+        <span>{{ k }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+
+<section class="card">
+    <h2>Правила аудита</h2>
+
+    <form method="post">
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <div class="checks">
+
+            {% for k in [
+                'token_in_url',
+                'token_over_http',
+                'cookie_secure',
+                'cookie_httponly',
+                'cookie_samesite',
+                'token_multi_client',
+                'expired_token_reuse',
+                'geo_change'
+            ] %}
+
+            <label>
+                <input
+                    type="checkbox"
+                    name="{{ k }}"
+                    {% if settings.get('rule.' + k) == '1' %}
+                        checked
+                    {% endif %}
+                >
+
+                {{ k }}
+            </label>
+
+            {% endfor %}
+
+        </div>
+
+        <label>
+            TTL сессии, минут
+
+            <input
+                type="number"
+                name="session_ttl_minutes"
+                value="{{ settings.get('session_ttl_minutes', '30') }}"
+            >
+        </label>
+
+        <button type="submit">
+            Сохранить
+        </button>
+    </form>
+</section>
+
+
+<section class="card">
+    <h2>Пользователи</h2>
+
+    <div class="table-wrap">
+        <table>
+
+            <tr>
+                <th>ID</th>
+                <th>Логин</th>
+                <th>Роль</th>
+                <th>Активен</th>
+                <th>Действия</th>
+            </tr>
+
+            {% for u in users %}
+
+            <tr>
+                <td>{{ u.id }}</td>
+
+                <td>
+                    {{ u.username }}
+                </td>
+
+                <td>
+                    {{ u.role }}
+                </td>
+
+                <td>
+                    {{ u.active }}
+                </td>
+
+                <td>
+                    <form
+                        class="inline"
+                        method="post"
+                        action="{{ url_for('main.admin_user', uid=u.id) }}"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        <select name="role">
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                            <option value="superuser">superuser</option>
+                        </select>
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="role"
+                        >
+                            Роль
+                        </button>
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="toggle"
+                        >
+                            Вкл/выкл
+                        </button>
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="revoke"
+                        >
+                            Сессии
+                        </button>
+
+                    </form>
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+    </div>
+</section>
+
+
+<div class="grid">
+
+    <section class="card">
+        <h2>API-ключ</h2>
+
+        <form
+            method="post"
+            action="{{ url_for('main.create_api_key') }}"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <label>
+                Название
+
+                <input
+                    name="name"
+                    required
+                >
+            </label>
+
+            <label>
+                User ID
+
+                <input
+                    type="number"
+                    name="user_id"
+                >
+            </label>
+
+            <button type="submit">
+                Создать
+            </button>
+
+        </form>
+    </section>
+
+
+    <section class="card">
+        <h2>Токен внешнего API</h2>
+
+        <form
+            method="post"
+            action="{{ url_for('main.external_token') }}"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <label>
+                Название
+
+                <input
+                    name="name"
+                    required
+                >
+            </label>
+
+            <label>
+                Провайдер
+
+                <input
+                    name="provider"
+                >
+            </label>
+
+            <label>
+                Токен
+
+                <input
+                    type="password"
+                    name="token"
+                    required
+                >
+            </label>
+
+            <button type="submit">
+                Сохранить
+            </button>
+
+        </form>
+    </section>
+
+</div>
+
+
+<section class="card">
+    <h2>Находки</h2>
+
+    <div class="audit-actions">
+        <a href="{{ url_for('main.report_pdf') }}">
+            PDF-отчёт
+        </a>
+
+        {% if session.get('role') == 'superuser' %}
+        <form
+            method="post"
+            action="{{ url_for('main.clear_audit') }}"
+            onsubmit="return confirm('Вы уверены? Все записи аудита будут удалены без возможности восстановления.');"
+        >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <button type="submit">
+                Очистить аудит
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Время</th>
+                <th>Уровень</th>
+                <th>Правило</th>
+                <th>Описание</th>
+            </tr>
+
+            {% for f in findings %}
+            <tr>
+                <td>{{ f.ts }}</td>
+                <td>{{ f.severity }}</td>
+                <td>{{ f.rule_id }}</td>
+                <td>{{ f.title }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<section class="card narrow"><h1>Двухфакторная проверка</h1><form method="post"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><label>OTP-код<input name="otp" inputmode="numeric" pattern="[0-9]{6}" required></label><button>Подтвердить</button></form></section>{% endblock %}

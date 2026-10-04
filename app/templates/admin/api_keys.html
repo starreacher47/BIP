@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Управление API-ключами</h1>
+            <p class="text-muted">
+                Создание и управление ключами доступа к REST API системы.
+            </p>
+        </div>
+
+        <a href="{{ url_for('main.admin') }}"
+           class="btn btn-secondary">
+            Назад в админ-панель
+        </a>
+    </div>
+
+
+    <!-- Создание API ключа -->
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Создать новый API-ключ</strong>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST"
+                  action="{{ url_for('main.create_api_key') }}">
+
+                <input type="hidden"
+                       name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Название ключа
+                    </label>
+
+                    <input
+                        type="text"
+                        name="name"
+                        class="form-control"
+                        placeholder="Например: mitmproxy-analyzer"
+                        required
+                    >
+                </div>
+
+
+                {% if session.get('role') == 'superuser' %}
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Владелец
+                    </label>
+
+                    <select name="user_id"
+                            class="form-select">
+
+                        {% for user in users %}
+
+                        <option value="{{ user['id'] }}">
+                            {{ user['username'] }}
+                            ({{ user['role'] }})
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                {% endif %}
+
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Создать API-ключ
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+
+    <!-- Список ключей -->
+
+    <div class="card">
+
+        <div class="card-header">
+            <strong>Существующие API-ключи</strong>
+        </div>
+
+        <div class="card-body">
+
+            {% if api_keys %}
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover">
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Владелец</th>
+                            <th>Префикс</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    {% for key in api_keys %}
+
+                        <tr>
+
+                            <td>
+                                {{ key['id'] }}
+                            </td>
+
+                            <td>
+                                {{ key['name'] }}
+                            </td>
+
+                            <td>
+                                {{ key['username'] or '—' }}
+                            </td>
+
+                            <td>
+                                <code>
+                                    {{ key['key_prefix'] }}...
+                                </code>
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="alert alert-info">
+                    API-ключи пока не созданы.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

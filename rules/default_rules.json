@@ -1,0 +1,9 @@
+{
+  "TOKEN_IN_URL": {"enabled": true, "severity": "high"},
+  "TOKEN_OVER_HTTP": {"enabled": true, "severity": "critical"},
+  "COOKIE_NO_SECURE": {"enabled": true, "severity": "high"},
+  "COOKIE_NO_HTTPONLY": {"enabled": true, "severity": "high"},
+  "COOKIE_NO_SAMESITE": {"enabled": true, "severity": "medium"},
+  "TOKEN_MULTI_CLIENT": {"enabled": true, "severity": "high"},
+  "EXPIRED_TOKEN_REUSE": {"enabled": true, "severity": "high"}
+}
