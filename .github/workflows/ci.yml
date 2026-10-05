@@ -19,11 +19,10 @@ jobs:
       #  env: {SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}', SONAR_HOST_URL: '${{ secrets.SONAR_HOST_URL }}'}
       - run: docker build -t token-security-auditor:${{ github.sha }} -f docker/Dockerfile .
       - name: Trivy container scan
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: token-security-auditor:${{ github.sha }}
-          format: sarif
-          output: trivy.sarif
+          format: table
           severity: CRITICAL,HIGH
           exit-code: '1'
       - run: zip -r token-security-auditor-${GITHUB_REF_NAME}.zip . -x '.git/*'
