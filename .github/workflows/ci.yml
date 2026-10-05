@@ -19,7 +19,7 @@ jobs:
       #  env: {SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}', SONAR_HOST_URL: '${{ secrets.SONAR_HOST_URL }}'}
       - run: docker build -t token-security-auditor:${{ github.sha }} -f docker/Dockerfile .
       - name: Trivy container scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: token-security-auditor:${{ github.sha }}
           format: table
