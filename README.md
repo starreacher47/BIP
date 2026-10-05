@@ -1,58 +1,106 @@
-# Token & Session Security Auditor v2.0.0
+# Token & Session Security Auditor
 
-Учебно-практическая система для безопасной обработки токенов и сессионных идентификаторов. Анализирует HTTP/HTTPS-трафик через mitmproxy и встроенный observer Flask, выявляет токены в cookie, Authorization, URL и теле запроса, обнаруживает hijacking/fixation, повторное использование токенов, небезопасные cookie и истёкшие JWT.
+Учебно-практическая система для обнаружения проблем, связанных с токенами и сессионными идентификаторами в HTTP(S)-трафике.
 
-## Возможности
+Система использует **mitmproxy** для перехвата трафика и Flask Auditor для анализа событий, применения правил безопасности и хранения результатов.
 
-- регистрация с подтверждением email/телефон OTP или токеном приглашения;
-- логин/пароль и TOTP 2FA;
-- GitHub OAuth и локальный OIDC/OAuth-провайдер Keycloak;
-- роли `user`, `admin`, `superuser`, смена пароля/аватара, отзыв сессий;
-- защищённый REST API: API Key/Bearer, CORS allowlist, CSRF для форм, CSP, SOP, rate limit 10/мин;
-- UUIDv7 Request ID во всех логах и заголовке `X-Request-Id`;
-- загрузка файлов до 2 ГБ кусками без помещения всего файла в RAM, WebSocket-прогресс, MinIO и защищённые временные ссылки;
-- SQLite, PDF-отчёты, Prometheus/Grafana, Nginx TLS/HSTS;
-- Docker, GitHub Actions, SonarQube и Trivy.
+## Основные возможности
 
-## Быстрый локальный запуск
+* обнаружение токенов в URL;
+* проверка защитных атрибутов cookies;
+* обнаружение повторного использования токенов;
+* обнаружение использования истёкших токенов;
+* обнаружение session hijacking;
+* обнаружение session fixation;
+* анализ изменения географической метки;
+* веб-интерфейс и административная панель;
+* REST API и API-ключи;
+* TOTP 2FA;
+* мониторинг через Prometheus и Grafana.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-python run.py
+## Архитектура
+
+```text
+Client / Attack Simulator
+          │
+          │ HTTPS :443
+          ▼
+      mitmproxy
+          │
+          ▼
+       target
+          │
+          ▼
+    analyzer addon
+          │
+          ▼
+     Auditor API
+          │
+          ▼
+        SQLite
 ```
 
-Откройте `http://127.0.0.1:5000`. Администратор: значения `ADMIN_USERNAME` и `ADMIN_PASSWORD` из `.env`.
+Мониторинг:
 
-## Полный стенд
-
-```bash
-cp .env.example .env
-docker compose up --build
+```text
+Auditor ───────► Prometheus ─────► Grafana
+node-exporter ─► Prometheus
 ```
 
-Перед запуском замените все секреты. Для TLS создайте сертификаты Certbot и укажите реальный домен в `deploy/nginx/nginx.conf`. Keycloak доступен внутри Docker-сети; создайте realm `token-auditor`, OIDC client и внесите client secret в `.env`.
+Основные компоненты:
 
-## REST API
+* `auditor` — Flask Auditor, API, Admin, mitmproxy и analyzer;
+* `target` — лабораторное целевое приложение;
+* `prometheus` — сбор метрик;
+* `node-exporter` — системные метрики;
+* `grafana` — визуализация.
 
-1. Суперпользователь создаёт API key в админ-панели.
-2. Передавайте `X-API-Key: tsa_...` или `Authorization: Bearer tsa_...`.
-3. Все методы `/api/v1/*` ограничены 10 запросами в минуту.
+## Docker-стенд
 
-Создание загрузки:
+Основной способ запуска — Docker Compose.
 
-```bash
-curl -X POST http://127.0.0.1:5000/api/v1/uploads \
- -H 'X-API-Key: tsa_...' -H 'Content-Type: application/json' \
- -d '{"filename":"traffic.json","size":1048576,"content_type":"application/json"}'
-```
+Основные точки доступа:
 
-Отправка частей: `PUT /api/v1/uploads/{id}/chunks`, `Content-Type: application/octet-stream`.
+| Компонент  | Адрес                    |
+| ---------- | ------------------------ |
+| Auditor    | `https://127.0.0.1:5000` |
+| mitmproxy  | `https://127.0.0.1:443`  |
+| Prometheus | `http://127.0.0.1:9090`  |
+| Grafana    | `http://127.0.0.1:3000`  |
 
-## Версионирование
+`target` и `node-exporter` доступны только внутри Docker-сети.
 
-SemVer `vX.Y.Z`: major — несовместимые изменения API, minor — новые совместимые функции, patch — исправления. Релиз создаётся тегом, например `git tag v2.0.0 && git push origin v2.0.0`.
+Конфигурация Docker-развёртывания находится в `.env.docker`. Секретные значения не должны попадать в Git.
 
-Подробности: `docs/SYSTEM_SPECS.md`, `docs/USER_SPECS.md`, `docs/DEPLOY.md`, `docs/SECURITY.md`, `docs/COMPARATIVE_ANALYSIS.md`.
+## Лабораторные сценарии
+
+В состав проекта входит целевое приложение с намеренно уязвимыми сценариями и Attack Simulator.
+
+Они используются для контролируемой демонстрации обнаружения:
+
+* небезопасных cookies;
+* токенов в URL;
+* повторного использования токенов;
+* истёкших токенов;
+* session hijacking;
+* session fixation.
+
+Attack Simulator следует использовать только с локальными или явно разрешёнными целями.
+
+## Документация
+
+Подробная информация находится в каталоге `docs/`:
+
+* [`SYSTEM_SPECS.md`](docs/SYSTEM_SPECS.md) — архитектура и назначение системы;
+* [`USER_SPECS.md`](docs/USER_SPECS.md) — основные пользовательские сценарии;
+* [`DEPLOY.md`](docs/DEPLOY.md) — Docker-развёртывание;
+* [`SECURITY.md`](docs/SECURITY.md) — меры безопасности;
+* [`COMPARATIVE_ANALYSIS.md`](docs/COMPARATIVE_ANALYSIS.md) — сравнение с другими классами инструментов.
+
+## Ограничения
+
+Проект предназначен для учебного и лабораторного использования.
+
+SQLite, тестовые TLS-сертификаты, уязвимое target-приложение и лабораторные сценарии Attack Simulator не следует рассматривать как production-конфигурацию.
+
+Система не является полноценной заменой DAST, SIEM или WAF.
