@@ -46,7 +46,7 @@ class TokenAuditAddon:
                 body = req.json()
             elif "application/x-www-form-urlencoded" in ctype:
                 body = parse_qs(req.get_text(strict=False))
-        except Exception:
+        except Exception: # noqa: BLE001
             body = {}
 
         payload = {
@@ -81,7 +81,7 @@ class TokenAuditAddon:
                 timeout=3,
                 verify=ctx.options.auditor_ca,
             )
-        except Exception as exc:
+        except Exception as exc: # noqa: BLE001
             ctx.log.warn(f"Audit API unavailable: {exc}")
 
 

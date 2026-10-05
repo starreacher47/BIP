@@ -4,8 +4,8 @@ import argparse
 import os
 import re
 import sqlite3
-from urllib.parse import urlparse
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
@@ -130,7 +130,7 @@ def report_to_auditor(kind, target, success, details):
 
         return True, "Результат передан в Auditor"
 
-    except Exception as exc:
+    except Exception as exc: # noqa: BLE001
         return False, f"Auditor API недоступен: {exc}"
 
 def create_session():
@@ -379,7 +379,7 @@ def fixation(base, username, password):
 
         return vulnerable, details
 
-    except Exception as exc:
+    except Exception as exc: # noqa: BLE001
         details = f"Session Fixation test error: {exc}"
 
         return False, details

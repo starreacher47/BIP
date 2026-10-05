@@ -211,5 +211,6 @@ def register_request_observer(app):
             body=request.form.to_dict(flat=False) if request.form else (request.get_json(silent=True) or {})
             payload={"method":request.method,"url":request.url,"scheme":request.scheme,"host":request.host.split(':')[0],"path":request.path,"client_ip":request.headers.get('X-Forwarded-For',request.remote_addr),"user_agent":request.user_agent.string,"client_geo":request.headers.get('X-Country'),"request_headers":dict(request.headers),"response_headers":dict(response.headers),"cookies":dict(request.cookies),"query_params":request.args.to_dict(flat=False),"body_params":body,"status_code":response.status_code}
             ingest_capture(payload,"flask")
-        except Exception as exc: app.logger.warning("Audit observer error: %s",exc)
+        except Exception as exc: # noqa: BLE001
+            app.logger.warning("Audit observer error: %s",exc)
         return response
