@@ -1,19 +1,198 @@
 # Развёртывание
 
-## Docker
-Заполните `.env`, затем выполните `docker compose up -d --build`. Контейнер приложения запускается не от root, с `read_only`, `no-new-privileges` и без Linux capabilities.
+## 1. Требования
 
-## Nginx и TLS
-Укажите домен, получите сертификат `certbot certonly --webroot -w deploy/certbot/www -d example.com`, перезапустите Nginx. HTTP перенаправляется на HTTPS, HSTS включён.
+Для запуска лабораторного стенда необходимы:
 
-## Keycloak
-Создайте realm `token-auditor`; client `token-auditor`, тип confidential; redirect URI `https://DOMAIN/oauth/keycloak/callback`; client secret поместите в CI/CD secret и `.env` сервера.
+* Docker;
+* Docker Compose;
+* доступ к Docker daemon;
+* свободные порты `443`, `5000`, `3000` и `9090`.
 
-## MinIO
-Смените root credentials, создайте bucket или разрешите приложению создать его. Установите `ENABLE_MINIO=true`.
+Порт `9100` наружу не публикуется и используется `Prometheus` для получения метрик `node-exporter` внутри Docker-сети.
 
-## Мониторинг
-Grafana получает Prometheus datasource автоматически. Dashboard содержит CPU, RAM, HTTP requests по классам ответов и rate-limit 429.
+Конфигурация Docker-развёртывания хранится в:
 
-## CI/CD secrets
-`SONAR_TOKEN`, `SONAR_HOST_URL`, registry credentials, production SSH key and `.env` values хранятся только в GitHub/GitLab Variables. Никогда не добавляйте `.env` в Git.
+```text
+.env.docker
+```
+
+Файл содержит секретные значения и не должен добавляться в Git.
+
+---
+
+## 2. Docker-архитектура
+
+Текущий стенд состоит из следующих сервисов:
+
+| Сервис          | Назначение                                        | Доступ                                            |
+| --------------- | ------------------------------------------------- | ------------------------------------------------- |
+| `auditor`       | Flask Auditor, API, Admin, mitmproxy и анализатор | `https://127.0.0.1:5000`, `https://127.0.0.1:443` |
+| `target`        | Лабораторное целевое приложение                   | только внутри Docker                              |
+| `prometheus`    | Сбор метрик                                       | `http://127.0.0.1:9090`                           |
+| `node-exporter` | Системные метрики                                 | только внутри Docker                              |
+| `grafana`       | Визуализация метрик                               | `http://127.0.0.1:3000`                           |
+
+Все сервисы подключены к Docker-сети `lab`.
+
+Основной поток трафика:
+
+```text
+Client / Attack Simulator
+          │
+          │ HTTPS :443
+          ▼
+      mitmproxy
+          │
+          ▼
+       target
+          │
+          ▼
+    Analyzer addon
+          │
+          ▼
+     Auditor API
+```
+
+Мониторинг работает отдельно:
+
+```text
+node-exporter ──► Prometheus ──► Grafana
+                       ▲
+                       │
+                    Auditor
+```
+
+---
+
+## 3. Auditor и mitmproxy
+
+Контейнер `auditor` объединяет основные компоненты системы:
+
+* Flask Auditor и административную панель;
+* REST API;
+* SQLite;
+* mitmproxy;
+* analyzer addon;
+* обработку результатов атак.
+
+Auditor работает по HTTPS на порту `5000`.
+
+```text
+https://127.0.0.1:5000
+```
+
+Метрики Auditor доступны через:
+
+```text
+https://127.0.0.1:5000/metrics
+```
+
+mitmproxy принимает внешний HTTPS-трафик на порту `443` и передаёт его в лабораторное целевое приложение:
+
+```text
+https://target:443
+```
+
+Analyzer addon передаёт результаты перехвата в Auditor API:
+
+```text
+https://127.0.0.1:5000/api/v1/audit/captures
+```
+
+Для доступа к API используется отдельный API-ключ.
+
+---
+
+## 4. Целевое приложение
+
+`target` — отдельное лабораторное HTTPS-приложение, предназначенное для воспроизведения небезопасных сценариев.
+
+Оно используется для тестирования правил Auditor, включая:
+
+* передачу токена через URL;
+* небезопасные cookie;
+* небезопасную аутентификацию;
+* session fixation;
+* использование `Authorization` header.
+
+Порт `443` целевого приложения доступен только внутри Docker-сети. Внешний клиент взаимодействует с ним через mitmproxy.
+
+---
+
+## 5. Мониторинг
+
+`Prometheus` собирает:
+
+* метрики Auditor;
+* системные метрики `node-exporter`.
+
+`node-exporter` работает только внутри Docker-сети.
+
+`Grafana` предоставляет визуализацию метрик:
+
+```text
+http://127.0.0.1:3000
+```
+
+Dashboard и datasource Grafana загружаются через provisioning из:
+
+```text
+deploy/grafana/provisioning/
+```
+
+Основные показатели dashboard:
+
+* CPU;
+* RAM;
+* HTTP-запросы;
+* HTTP 429.
+
+---
+
+## 6. Хранение данных
+
+Для постоянного хранения используются Docker volumes:
+
+```text
+app_data
+grafana_data
+```
+
+`app_data` содержит данные Auditor, включая SQLite.
+
+`grafana_data` содержит состояние Grafana.
+
+Volumes не относятся к исходному коду и не должны удаляться вместе с проектом без необходимости сохранения данных.
+
+---
+
+## 7. Безопасность конфигурации
+
+Секреты и локальные данные не должны попадать в Git-репозиторий.
+
+В частности:
+
+```text
+.env
+.env.docker
+*.key
+*.db
+```
+
+не должны коммититься.
+
+Текущий Docker-стенд является лабораторным окружением. Его тестовые сертификаты, API-ключи и другие локальные значения не следует использовать в production.
+
+---
+
+## 8. Дополнительные компоненты
+
+Следующие компоненты **не входят в обязательную текущую Docker-цепочку**:
+
+* Nginx;
+* Certbot;
+* Keycloak;
+* MinIO.
+
+Они могут быть добавлены позднее при расширении системы или интеграции с внешней инфраструктурой.

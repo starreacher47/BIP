@@ -28,21 +28,6 @@ MITMPROXY_BASE_URL = (
     f"https://{MITMPROXY_HOST}:{MITMPROXY_PORT}"
 )
 
-
-# CA для attack_simulator -> mitmproxy :443
-CLIENT_CA_CERT = os.getenv(
-    "MITMPROXY_CLIENT_CA",
-    str(Path.home() / ".mitmproxy" / "mitmproxy-ca-cert.pem"),
-)
-
-CLIENT_CA_CERT_PATH = Path(CLIENT_CA_CERT)
-
-if not CLIENT_CA_CERT_PATH.is_absolute():
-    CLIENT_CA_CERT_PATH = PROJECT_ROOT / CLIENT_CA_CERT_PATH
-
-CLIENT_CA_CERT_PATH = CLIENT_CA_CERT_PATH.resolve()
-
-
 # CA для attack_simulator -> Auditor :5000
 AUDITOR_CA_CERT = os.getenv(
     "MITMPROXY_UPSTREAM_CA",
@@ -149,9 +134,9 @@ def report_to_auditor(kind, target, success, details):
         return False, f"Auditor API недоступен: {exc}"
 
 def create_session():
-    """Создаёт requests Session с CA сертификатом mitmproxy."""
+    """Создаёт session для обращения к локальному mitmproxy."""
     session = requests.Session()
-    session.verify = str(CLIENT_CA_CERT_PATH)
+    session.verify = False
     return session
 
 def get_csrf_token(session_obj, base):

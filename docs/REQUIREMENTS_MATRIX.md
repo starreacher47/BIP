@@ -1,33 +1,73 @@
 # Матрица выполнения требований
 
-| Требование | Реализация |
-|---|---|
-| GUI аутентификации | `/login`, `/register`, адаптивные шаблоны |
-| 2FA login/password + OTP | TOTP `pyotp`, `/login/otp` |
-| Внешний OAuth | GitHub через Authlib |
-| Локальный OAuth | Keycloak в Docker Compose |
-| Роли | user/admin/superuser |
-| Смена пароля/аватара | `/profile/security`, `/profile/avatar` |
-| Деактивация сессий | пользователь и superuser |
-| API tokens | хешированные API keys, управление в admin |
-| 413/415 | централизованные handlers |
-| Файлы до 2 ГБ | chunk API, `MAX_CONTENT_LENGTH`, потоковая запись |
-| WebSocket progress | Flask-SocketIO room по upload ID |
-| S3 | MinIO client и bucket |
-| Share direct URL | случайный хешируемый токен, TTL, ACL |
-| Admin/User GUI | Bootstrap-free responsive UI |
-| REST API | `/api/v1` |
-| Mobile | viewport, responsive grid, touch targets >=44px |
-| SOP/CSP/CORS | middleware headers и allowlist/403 |
-| CSRF | Flask-WTF во всех HTML POST формах |
-| API auth | X-API-Key/Bearer, 401 |
-| Rate limit | 10/min per route/IP, 429 |
-| UUIDv7 logging | request_logs + X-Request-Id |
-| Hardening | non-root/read-only/cap_drop/no-new-privileges, docs |
-| Nginx TLS/HSTS | reverse proxy config + Certbot procedure |
-| Prometheus/Grafana | app metrics, node exporter, dashboard |
-| SemVer | VERSION, CHANGELOG, tag workflows |
-| CI variables | documented secrets and variables |
-| SonarQube | GitHub/GitLab pipeline |
-| Trivy | container scan pipeline |
-| CI release | ZIP release and registry image |
+| Требование                    | Текущая реализация                                                                                                                                                      | Статус                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| GUI аутентификации            | Веб-интерфейс Auditor с формами входа и регистрации                                                                                                                     | Реализовано                      |
+| 2FA login/password + OTP      | TOTP через `pyotp`, отдельный сценарий OTP                                                                                                                              | Реализовано                      |
+| Внешний OAuth                 | Интеграция с GitHub через Authlib                                                                                                                                       | Реализовано                      |
+| Локальный OAuth               | Конфигурация Keycloak предусмотрена, но Keycloak не входит в текущую обязательную Docker-цепочку                                                                        | Частично                         |
+| Роли                          | Реализованы роли `user`, `admin`, `superuser`                                                                                                                           | Реализовано                      |
+| Смена пароля/аватара          | Функциональность профиля и безопасности пользователя                                                                                                                    | Реализовано                      |
+| Деактивация сессий            | Возможность управления активными сессиями пользователя и администратора                                                                                                 | Реализовано                      |
+| API tokens                    | API-ключи хранятся в хешированном виде и управляются через административный интерфейс                                                                                   | Реализовано                      |
+| Обработка 413/415             | Централизованные обработчики HTTP-ошибок                                                                                                                                | Реализовано                      |
+| Файлы до 2 ГБ                 | Ограничение `MAX_CONTENT_LENGTH`, chunked upload и потоковая запись                                                                                                     | Реализовано                      |
+| WebSocket progress            | Socket.IO используется для передачи прогресса загрузки                                                                                                                  | Реализовано                      |
+| S3                            | Поддержка MinIO предусмотрена конфигурацией и клиентом S3, но MinIO не является обязательным компонентом текущего стенда                                                | Частично                         |
+| Share direct URL              | Реализована выдача защищённой ссылки с токеном, TTL и контролем доступа                                                                                                 | Реализовано                      |
+| Admin/User GUI                | Адаптивный веб-интерфейс Auditor без Bootstrap                                                                                                                          | Реализовано                      |
+| REST API                      | API с префиксом `/api/v1`                                                                                                                                               | Реализовано                      |
+| Mobile                        | Responsive layout, viewport и адаптивные элементы интерфейса                                                                                                            | Реализовано                      |
+| Security headers / CSP / CORS | Middleware устанавливает защитные HTTP-заголовки и применяет allowlist для разрешённых источников                                                                       | Реализовано                      |
+| CSRF                          | CSRF-защита HTML-форм через Flask-WTF                                                                                                                                   | Реализовано                      |
+| API auth                      | API-ключи через `X-API-Key`; защищённые endpoints возвращают `401` при отсутствии/некорректной аутентификации                                                           | Реализовано                      |
+| Rate limit                    | Ограничение запросов с ответом `429` при превышении лимита                                                                                                              | Реализовано                      |
+| Request logging               | Журналирование HTTP-запросов и использование `X-Request-Id`                                                                                                             | Реализовано                      |
+| Hardening                     | Docker-контейнеры запускаются от непривилегированного пользователя; используются `no-new-privileges`, `cap_drop` и необходимые capabilities                             | Реализовано                      |
+| Nginx TLS/HSTS                | Nginx не используется в текущей архитектуре; TLS завершается непосредственно Auditor и mitmproxy                                                                        | Не используется                  |
+| Prometheus/Grafana            | Auditor экспортирует application metrics; Prometheus собирает метрики Auditor и node-exporter; Grafana автоматически получает datasource и dashboard через provisioning | Реализовано                      |
+| node-exporter                 | Системные метрики CPU, RAM и других ресурсов доступны Prometheus через `node-exporter:9100`                                                                             | Реализовано                      |
+| SemVer                        | Версия проекта и история изменений поддерживаются в проекте                                                                                                             | Реализовано / проверить workflow |
+| CI variables                  | Секреты CI/CD должны храниться в защищённых Variables/Secrets, а не в Git                                                                                               | Реализовано в документации       |
+| SonarQube                     | Конфигурация CI-проверок предусмотрена проектом, фактический запуск зависит от настроенного SonarQube-сервера и CI                                                      | Частично                         |
+| Trivy                         | Предусмотрено сканирование Docker-образов на уязвимости                                                                                                                 | Частично                         |
+| CI release                    | Автоматизация сборки/release предусмотрена, но не является частью локального Docker-стенда                                                                              | Частично                         |
+
+## Компоненты, не входящие в обязательную текущую Docker-цепочку
+
+Текущая рабочая конфигурация стенда не требует:
+
+* Nginx;
+* Certbot;
+* Keycloak;
+* MinIO.
+
+Эти компоненты могут использоваться для расширения системы или интеграции с внешней инфраструктурой, однако их отсутствие не препятствует запуску основного лабораторного стенда.
+
+## Основная рабочая цепочка
+
+Текущая Docker-архитектура включает:
+
+```text
+Client / Attack Simulator
+          │
+          │ HTTPS :443
+          ▼
+      mitmproxy
+          │
+          │ HTTPS
+          ▼
+       target
+          │
+          │
+          └──► Auditor / SQLite
+
+Auditor ─────────────► Prometheus
+                           │
+node-exporter ────────────┘
+                           │
+                           ▼
+                        Grafana
+```
+
+Таким образом, основной функционал проекта включает аутентификацию и управление пользователями, API, аудит HTTP(S)-трафика, обнаружение проблем с токенами и сессиями, учебные сценарии session hijacking/session fixation, хранение результатов в SQLite и операционный мониторинг через Prometheus и Grafana.

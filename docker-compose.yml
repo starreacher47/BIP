@@ -39,8 +39,43 @@ services:
     networks:
       - lab
 
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - lab
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    expose:
+      - "9100"
+    restart: unless-stopped
+    networks:
+      - lab
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: Admin123!
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - lab
+
 networks:
   lab:
 
 volumes:
   app_data:
+  grafana_data:
