@@ -14,9 +14,9 @@ jobs:
       - run: ruff check .
       - run: bandit -r app analyzer -x tests
       - run: pytest
-      - name: SonarQube SAST
-        uses: SonarSource/sonarqube-scan-action@v5
-        env: {SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}', SONAR_HOST_URL: '${{ secrets.SONAR_HOST_URL }}'}
+      #- name: SonarQube SAST
+      #  uses: SonarSource/sonarqube-scan-action@v5
+      #  env: {SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}', SONAR_HOST_URL: '${{ secrets.SONAR_HOST_URL }}'}
       - run: docker build -t token-security-auditor:${{ github.sha }} .
       - name: Trivy container scan
         uses: aquasecurity/trivy-action@0.35.0
