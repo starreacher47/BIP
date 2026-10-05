@@ -338,7 +338,7 @@ def fixation(base, username, password):
             timeout=5,
         )
 
-        csrf_token = "lab-csrf-token"
+        csrf_token = "lab-csrf-token" # nosec B105
 
         # Шаг 3. Авторизация жертвы с уже известным SID.
         post_response = session.post(

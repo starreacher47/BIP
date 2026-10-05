@@ -64,9 +64,17 @@ CREATE TABLE IF NOT EXISTS attack_tests (
 );
 """
 DEFAULT_SETTINGS={
- 'rule.token_in_url':'1','rule.token_over_http':'1','rule.cookie_secure':'1','rule.cookie_httponly':'1',
- 'rule.cookie_samesite':'1','rule.token_multi_client':'1','rule.expired_token_reuse':'1','rule.geo_change':'1',
- 'session_ttl_minutes':'30','geo_change_enabled':'1','registration_enabled':'1'
+    'rule.token_in_url':'1',
+    'rule.token_over_http':'1',
+    'rule.cookie_secure':'1',
+    'rule.cookie_httponly':'1',
+    'rule.cookie_samesite':'1',  # nosec B105
+    'rule.token_multi_client':'1',
+    'rule.expired_token_reuse':'1',
+    'rule.geo_change':'1',
+    'session_ttl_minutes':'30',
+    'geo_change_enabled':'1',
+    'registration_enabled':'1'
 }
 def get_db():
     if 'db' not in g:

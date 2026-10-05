@@ -51,7 +51,15 @@ def create_app(test_config=None):
     limiter.init_app(app); oauth.init_app(app); socketio.init_app(app,cors_allowed_origins=app.config['TRUSTED_ORIGINS'])
     CORS(app,origins=app.config['TRUSTED_ORIGINS'],supports_credentials=True,resources={r'/api/*':{'origins':app.config['TRUSTED_ORIGINS']}})
     if app.config['GITHUB_CLIENT_ID']:
-      oauth.register('github',client_id=app.config['GITHUB_CLIENT_ID'],client_secret=app.config['GITHUB_CLIENT_SECRET'],access_token_url='https://github.com/login/oauth/access_token',authorize_url='https://github.com/login/oauth/authorize',api_base_url='https://api.github.com/',client_kwargs={'scope':'user:email'})
+        oauth.register(
+        'github',
+        client_id=app.config['GITHUB_CLIENT_ID'],
+        client_secret=app.config['GITHUB_CLIENT_SECRET'],
+        access_token_url='https://github.com/login/oauth/access_token',  # nosec B106
+        authorize_url='https://github.com/login/oauth/authorize',
+        api_base_url='https://api.github.com/',
+        client_kwargs={'scope': 'user:email'},
+    )
     if app.config['KEYCLOAK_CLIENT_ID']:
       oauth.register('keycloak',client_id=app.config['KEYCLOAK_CLIENT_ID'],client_secret=app.config['KEYCLOAK_CLIENT_SECRET'],server_metadata_url=app.config['KEYCLOAK_SERVER_METADATA_URL'],client_kwargs={'scope':'openid email profile'})
     app.register_blueprint(bp)
